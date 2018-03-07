@@ -1,6 +1,6 @@
 # Gopkg.toml example
 #
-# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
 # for detailed Gopkg.toml documentation.
 #
 # required = ["github.com/user/thing/cmd/thing"]
@@ -30,10 +30,6 @@
   name = "github.com/GeertJohan/go.rice"
 
 [[constraint]]
-  name = "github.com/bitly/go-simplejson"
-  version = "0.5.0"
-
-[[constraint]]
   name = "github.com/fatih/color"
   version = "0.1.0"
 
@@ -47,7 +43,27 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/iikira/baidu-tools"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/iikira/downloader"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/iikira/osext"
+
+[[constraint]]
+  name = "github.com/json-iterator/go"
+  version = "1.1.2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mars9/passwd"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
 
 [[constraint]]
   branch = "master"

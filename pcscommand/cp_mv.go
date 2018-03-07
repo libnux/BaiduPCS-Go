@@ -3,6 +3,8 @@ package pcscommand
 import (
 	"fmt"
 	"github.com/iikira/BaiduPCS-Go/baidupcs"
+	"github.com/iikira/BaiduPCS-Go/pcsconfig"
+	"github.com/iikira/BaiduPCS-Go/pcspath"
 	"path"
 )
 
@@ -31,12 +33,29 @@ func runCpMvOp(op string, paths ...string) {
 		return
 	}
 
-	to = getAbsPathNoMatch(to)
+	pcsPath := pcspath.NewPCSPath(&pcsconfig.Config.MustGetActive().Workdir, to)
+	to = pcsPath.AbsPathNoMatch()
+
+	// 尝试匹配
+	if patternRE.MatchString(to) {
+		tos, _ := getAllAbsPaths(to)
+
+		switch len(tos) {
+		case 0:
+			// do nothing
+		case 1:
+			to = tos[0]
+		default:
+			fmt.Printf("目标目录有 %d 条匹配结果, 请检查通配符", len(tos))
+			return
+		}
+	}
 
 	toInfo, err := info.FilesDirectoriesMeta(to)
 	if err != nil {
 		// 判断路径是否存在
 		// 如果不存在, 则为重命名或同目录拷贝操作
+
 		// 如果 froms 数不是1, 则意义不明确.
 		if len(froms) != 1 {
 			fmt.Println(err)
@@ -44,7 +63,7 @@ func runCpMvOp(op string, paths ...string) {
 		}
 
 		if op == "copy" { // 拷贝
-			err = info.Copy(baidupcs.CpMvJSON{
+			err = info.Copy(&baidupcs.CpMvJSON{
 				From: froms[0],
 				To:   to,
 			})
@@ -76,10 +95,12 @@ func runCpMvOp(op string, paths ...string) {
 	}
 
 	cj := new(baidupcs.CpMvJSONList)
-	cj.List = make([]baidupcs.CpMvJSON, len(froms))
+	cj.List = make([]*baidupcs.CpMvJSON, len(froms))
 	for k := range froms {
-		cj.List[k].From = froms[k]
-		cj.List[k].To = to + "/" + path.Base(froms[k])
+		cj.List[k] = &baidupcs.CpMvJSON{
+			From: froms[k],
+			To:   to + "/" + path.Base(froms[k]),
+		}
 	}
 
 	switch op {

@@ -7,9 +7,18 @@ import (
 	"time"
 )
 
+var (
+	// TLSConfig tls连接配置
+	TLSConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+)
+
 // HTTPClient http client
 type HTTPClient struct {
 	http.Client
+
+	UserAgent string
 }
 
 // NewHTTPClient 返回 HTTPClient 的指针,
@@ -19,28 +28,38 @@ func NewHTTPClient() *HTTPClient {
 	return &HTTPClient{
 		Client: http.Client{
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
+				Proxy:                 http.ProxyFromEnvironment,
+				DialContext:           dialContext,
+				Dial:                  dial,
+				DialTLS:               dialTLS,
+				TLSClientConfig:       TLSConfig,
 				TLSHandshakeTimeout:   10 * time.Second,
 				DisableKeepAlives:     false,
 				DisableCompression:    false, // gzip
+				MaxIdleConns:          100,
+				IdleConnTimeout:       90 * time.Second,
 				ResponseHeaderTimeout: 10 * time.Second,
 				ExpectContinueTimeout: 10 * time.Second,
 			},
 			Jar:     jar,
 			Timeout: 30 * time.Second,
 		},
+		UserAgent: UserAgent,
 	}
 }
 
 // SetCookiejar 设置 cookie
 func (h *HTTPClient) SetCookiejar(c *cookiejar.Jar) {
-	h.Jar = c
+	if c != nil {
+		h.Jar = c
+		return
+	}
+
+	h.ResetCookiejar()
 }
 
-// ClearCookiejar 清空 cookie
-func (h *HTTPClient) ClearCookiejar() {
+// ResetCookiejar 清空 cookie
+func (h *HTTPClient) ResetCookiejar() {
 	h.Jar, _ = cookiejar.New(nil)
 }
 
@@ -54,12 +73,12 @@ func (h *HTTPClient) SetKeepAlive(b bool) {
 	h.Transport.(*http.Transport).DisableKeepAlives = !b
 }
 
-//SetGzip 是否启用Gzip
+// SetGzip 是否启用Gzip
 func (h *HTTPClient) SetGzip(b bool) {
 	h.Transport.(*http.Transport).DisableCompression = !b
 }
 
-//SetResponseHeaderTimeout 设置目标服务器响应超时时间
+// SetResponseHeaderTimeout 设置目标服务器响应超时时间
 func (h *HTTPClient) SetResponseHeaderTimeout(t time.Duration) {
 	h.Transport.(*http.Transport).ResponseHeaderTimeout = t
 }

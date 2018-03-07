@@ -3,31 +3,30 @@ package uploader
 import (
 	"fmt"
 	"github.com/iikira/BaiduPCS-Go/pcsutil"
+	"github.com/iikira/BaiduPCS-Go/requester/multipartreader"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // DoUpload 执行上传
-func DoUpload(uploadURL string, isMultipart bool, uploadReaderLen ReaderLen, checkFunc func(resp *http.Response, err error)) {
-	u := NewUploader(uploadURL, isMultipart, uploadReaderLen, nil)
+func DoUpload(uploadURL string, readedlen64 multipartreader.ReadedLen64, o *Options, checkFunc func(resp *http.Response, err error)) {
+	u := NewUploader(uploadURL, readedlen64, o)
 
 	exit := make(chan struct{})
-	exit2 := make(chan struct{})
 
 	u.OnExecute(func() {
-		t := time.Now()
-		c := u.GetStatusChan()
 		for {
 			select {
-			case <-exit:
-				return
-			case v := <-c:
-				fmt.Printf("\r%v/%v %v/s time: %s %v",
+			case v, ok := <-u.UploadStatus:
+				if !ok {
+					return
+				}
+
+				fmt.Printf("\r%s/%s %s/s in %s %v",
 					pcsutil.ConvertFileSize(v.Uploaded, 2),
 					pcsutil.ConvertFileSize(v.Length, 2),
 					pcsutil.ConvertFileSize(v.Speed, 2),
-					time.Since(t)/1000000*1000000,
+					v.TimeElapsed,
 					"[UPLOADING]"+strings.Repeat(" ", 10),
 				)
 			}
@@ -36,11 +35,10 @@ func DoUpload(uploadURL string, isMultipart bool, uploadReaderLen ReaderLen, che
 
 	u.OnFinish(func() {
 		exit <- struct{}{}
-		exit2 <- struct{}{}
 	})
 
 	u.Execute(checkFunc)
 
-	<-exit2
+	<-exit
 	return
 }

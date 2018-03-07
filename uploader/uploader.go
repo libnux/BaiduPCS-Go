@@ -1,78 +1,99 @@
+// Package uploader 上传包
 package uploader
 
 import (
-	"bytes"
 	"github.com/iikira/BaiduPCS-Go/requester"
-	"mime/multipart"
+	"github.com/iikira/BaiduPCS-Go/requester/multipartreader"
 	"net/http"
-	"strings"
 )
 
 // Uploader 上传
 type Uploader struct {
-	URL         string // 上传地址
-	IsMultiPart bool   // 是否表单上传
+	URL  string                      // 上传地址
+	Body multipartreader.ReadedLen64 // 要上传的对象
 
-	Body *reader // 要上传的对象
+	Options *Options
 
-	client *requester.HTTPClient
+	UploadStatus <-chan UploadStatus // 上传状态
+	finished     bool
 
 	onExecute func()
 	onFinish  func()
 }
 
-// NewUploader 返回 uploader 对象, url: 上传地址, isMultipart: 是否表单上传,uploadReaderLen: 实现 uploader.ReaderLen 接口的对象, 例如文件
-func NewUploader(url string, isMultipart bool, uploadReaderLen ReaderLen, h *requester.HTTPClient) (uploader *Uploader) {
+// Options are the options for creating a new Uploader
+type Options struct {
+	IsMultiPart bool                  // 是否表单上传
+	Client      *requester.HTTPClient // http 客户端
+}
+
+// NewUploader 返回 uploader 对象, url: 上传地址, readedlen64: 实现 multipartreader.ReadedLen64 接口的对象, 例如文件
+func NewUploader(url string, readedlen64 multipartreader.ReadedLen64, o *Options) (uploader *Uploader) {
 	uploader = &Uploader{
-		URL:         url,
-		IsMultiPart: isMultipart,
-		Body: &reader{
-			uploadReaderLen: uploadReaderLen,
-		},
+		URL:     url,
+		Body:    readedlen64,
+		Options: o,
 	}
 
-	if h == nil {
-		uploader.client = requester.NewHTTPClient()
-	} else {
-		uploader.client = h
+	if uploader.Options == nil {
+		uploader.Options = &Options{
+			IsMultiPart: false,
+			Client:      requester.NewHTTPClient(),
+		}
+	}
+
+	if uploader.Options.Client == nil {
+		uploader.Options.Client = requester.NewHTTPClient()
 	}
 
 	// 设置不超时
-	uploader.client.SetTimeout(0)
-	uploader.client.SetResponseHeaderTimeout(0)
+	uploader.Options.Client.SetTimeout(0)
+	uploader.Options.Client.SetResponseHeaderTimeout(0)
 	return
 }
 
-// Execute 执行上传
-func (u *Uploader) Execute(checkFunc func(resp *http.Response, err error)) {
+// Execute 执行上传, 收到返回值信号则为上传结束
+func (u *Uploader) Execute(checkFunc func(resp *http.Response, err error)) <-chan struct{} {
+	finish := make(chan struct{}, 0)
+	u.startStatus()
 	go func() {
 		u.touch(u.onExecute)
 
 		// 开始上传
 		resp, _, err := u.execute()
 
+		// 上传结束
+		u.finished = true
+
 		if checkFunc != nil {
 			checkFunc(resp, err)
 		}
-		u.touch(u.onFinish)
+
+		u.touch(u.onFinish) // 触发上传结束的事件
+
+		finish <- struct{}{}
 	}()
+	return finish
 }
 
 func (u *Uploader) execute() (resp *http.Response, code int, err error) {
-	var contentType string
-	if u.IsMultiPart {
-		multipartWriter := &bytes.Buffer{}
-		writer := multipart.NewWriter(multipartWriter)
-		writer.CreateFormFile("uploadedfile", "")
+	var (
+		contentType string
+		obody       multipartreader.ReaderLen64
+	)
 
-		u.Body.multipart = multipartWriter
-		u.Body.multipartEnd = strings.NewReader("\r\n--" + writer.Boundary() + "--\r\n")
-		contentType = writer.FormDataContentType()
+	if u.Options.IsMultiPart {
+		mr := multipartreader.NewMultipartReader()
+		mr.AddFormFile("uploadedfile", "", u.Body)
+
+		contentType = mr.ContentType()
+		obody = mr
 	} else {
 		contentType = "application/x-www-form-urlencoded"
+		obody = u.Body
 	}
 
-	req, err := http.NewRequest("POST", u.URL, u.Body)
+	req, err := http.NewRequest("POST", u.URL, obody)
 	if err != nil {
 		return nil, 1, err
 	}
@@ -80,9 +101,9 @@ func (u *Uploader) execute() (resp *http.Response, code int, err error) {
 	req.Header.Add("Content-Type", contentType)
 
 	// 设置 Content-Length 不然请求会卡住不动!!!
-	req.ContentLength = u.Body.totalLen()
+	req.ContentLength = obody.Len()
 
-	resp, err = u.client.Do(req)
+	resp, err = u.Options.Client.Do(req)
 	if err != nil {
 		return nil, 2, err
 	}

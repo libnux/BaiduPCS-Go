@@ -41,16 +41,17 @@
   branch = "master"
   name = "github.com/gobs/args"
   packages = ["."]
-  revision = "85dec0568397e293c778d50dd19b0e1bef42a2cb"
+  revision = "92343d88e3e4a33c4e6e2975367a138e66179736"
 
 [[projects]]
   branch = "master"
   name = "github.com/iikira/Baidu-Login"
   packages = [
     ".",
-    "bdcrypto"
+    "bdcrypto",
+    "bdcrypto/ecb"
   ]
-  revision = "4ff0419998440bb381537c85aed55dbe9e5d6b7b"
+  revision = "48c7c58e3e4c444474e9102c0b8987fda85d649a"
 
 [[projects]]
   branch = "master"
@@ -60,13 +61,25 @@
     "tieba",
     "tieba/tiebautil"
   ]
-  revision = "6c7bd5008842794a35fe03703a52f32466de0a97"
+  revision = "4db4a2d0671562fc3eb65bd73c1388ce3ac45ddb"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/iikira/downloader"
+  packages = ["."]
+  revision = "64a054c294225ef2fab86232c9cd65c7121d65da"
 
 [[projects]]
   branch = "master"
   name = "github.com/iikira/osext"
   packages = ["."]
   revision = "f808bcd957c382e32d377c68935d94bbafd0d5d0"
+
+[[projects]]
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  revision = "3353055b2a1a5ae1b6a8dfde887a524e7088f3a2"
+  version = "1.1.2"
 
 [[projects]]
   branch = "master"
@@ -76,9 +89,39 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mars9/passwd"
+  packages = ["."]
+  revision = "0f6332435c864c4f415d566d2e5c747e51c7c24f"
+
+[[projects]]
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  revision = "9e777a8366cce605130a531d2cd6363d07ad7317"
+  version = "v0.0.2"
+
+[[projects]]
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
+  version = "1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  revision = "b8a9be070da40449e501c3c4730a889e42d87a9e"
+
+[[projects]]
+  branch = "master"
   name = "github.com/peterh/liner"
   packages = ["."]
-  revision = "3681c2a912330352991ecdd642f257efe5b85518"
+  revision = "161ea9c37d6d4e97afe7f8f9cde7e647d49bd091"
 
 [[projects]]
   branch = "master"
@@ -95,6 +138,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "71034c50e7357e04a3ad9e3466d3223237095a73eb3e2598ed0fc8aee7061522"
+  inputs-digest = "03af4076e67f8dfe009d7b775754232d546dae87f1eab2973056b99c747b6d04"
   solver-name = "gps-cdcl"
   solver-version = 1

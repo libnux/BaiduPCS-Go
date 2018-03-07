@@ -1,3 +1,4 @@
+// Package pcsverbose 调试包
 package pcsverbose
 
 import (
@@ -8,7 +9,7 @@ import (
 
 var (
 	// IsVerbose 是否调试
-	IsVerbose bool = false
+	IsVerbose = false
 
 	// Output 输出
 	Output io.Writer = os.Stderr
@@ -20,16 +21,19 @@ var (
 )
 
 // Verbosef 调试格式输出
-func Verbosef(format string, a ...interface{}) {
+func Verbosef(format string, a ...interface{}) (n int, err error) {
 	if IsVerbose {
-		fmt.Fprintf(Output, Prefix()+format, a...)
+		return fmt.Fprintf(Output, Prefix()+format, a...)
 	}
+	return
 }
 
 // Verboseln 调试输出一行
-func Verboseln(a ...interface{}) {
+func Verboseln(a ...interface{}) (n int, err error) {
 	if IsVerbose {
-		fmt.Fprint(Output, Prefix())
-		fmt.Fprintln(Output, a...)
+		n1, err := fmt.Fprint(Output, Prefix())
+		n2, err := fmt.Fprintln(Output, a...)
+		return n1 + n2, err
 	}
+	return
 }

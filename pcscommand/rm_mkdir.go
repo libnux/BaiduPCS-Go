@@ -2,6 +2,11 @@ package pcscommand
 
 import (
 	"fmt"
+	"github.com/iikira/BaiduPCS-Go/pcsconfig"
+	"github.com/iikira/BaiduPCS-Go/pcspath"
+	"github.com/iikira/BaiduPCS-Go/pcstable"
+	"os"
+	"strconv"
 )
 
 // RunRemove 执行 批量删除文件/目录
@@ -13,9 +18,12 @@ func RunRemove(paths ...string) {
 	}
 
 	pnt := func() {
+		tb := pcstable.NewTable(os.Stdout)
+		tb.SetHeader([]string{"#", "文件/目录"})
 		for k := range paths {
-			fmt.Printf("%d: %s\n", k+1, paths[k])
+			tb.Append([]string{strconv.Itoa(k), paths[k]})
 		}
+		tb.Render()
 	}
 
 	err = info.Remove(paths...)
@@ -26,15 +34,15 @@ func RunRemove(paths ...string) {
 		return
 	}
 
-	fmt.Println("操作成功, 以下文件/目录已删除: ")
+	fmt.Println("操作成功, 以下文件/目录已删除, 可在网盘文件回收站找回: ")
 	pnt()
 }
 
 // RunMkdir 执行 创建目录
 func RunMkdir(path string) {
-	path = getAbsPathNoMatch(path)
+	pcsPath := pcspath.NewPCSPath(&pcsconfig.Config.MustGetActive().Workdir, path)
 
-	err := info.Mkdir(path)
+	err := info.Mkdir(pcsPath.AbsPathNoMatch())
 	if err != nil {
 		fmt.Printf("创建目录 %s 失败, %s\n", path, err)
 		return

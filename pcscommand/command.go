@@ -1,3 +1,4 @@
+// Package pcscommand 命令包
 package pcscommand
 
 import (
@@ -10,6 +11,7 @@ var (
 	info = new(baidupcs.PCSApi)
 )
 
+// GetPCSInfo 重载并返回 PCS 配置信息
 func GetPCSInfo() *baidupcs.PCSApi {
 	ReloadInfo()
 	return info
@@ -18,10 +20,10 @@ func GetPCSInfo() *baidupcs.PCSApi {
 // ReloadInfo 重载配置
 func ReloadInfo() {
 	pcsconfig.Reload()
-	info = baidupcs.NewPCS(pcsconfig.ActiveBaiduUser.BDUSS)
+	info = baidupcs.NewPCS(pcsconfig.Config.MustGetActive().BDUSS)
 }
 
-// ReloadIfInConsole 程序在 Console 模式下才回重载配置
+// ReloadIfInConsole 程序在 Console 模式下才会重载配置
 func ReloadIfInConsole() {
 	if len(os.Args) == 1 {
 		ReloadInfo()

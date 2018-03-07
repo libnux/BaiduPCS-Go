@@ -2,7 +2,7 @@ package pcsutil
 
 import (
 	"fmt"
-	"time"
+	"unsafe"
 )
 
 const (
@@ -26,11 +26,11 @@ func ConvertFileSize(size int64, precision ...int) string {
 	if len(precision) == 1 {
 		pint = fmt.Sprint(precision[0])
 	}
-	if size <= 0 {
-		return "0"
+	if size < 0 {
+		return "0B"
 	}
 	if size < KB {
-		return fmt.Sprintf("%."+pint+"fB", float64(size))
+		return fmt.Sprintf("%dB", size)
 	}
 	if size < MB {
 		return fmt.Sprintf("%."+pint+"fKB", float64(size)/float64(KB))
@@ -47,12 +47,27 @@ func ConvertFileSize(size int64, precision ...int) string {
 	return fmt.Sprintf("%."+pint+"fPB", float64(size)/float64(PB))
 }
 
+// ToString unsafe 转换, 将 []byte 转换为 string
+func ToString(p []byte) string {
+	return *(*string)(unsafe.Pointer(&p))
+}
+
+// ToBytes unsafe 转换, 将 string 转换为 []byte
+func ToBytes(str string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&str))
+}
+
 // IntToBool int 类型转换为 bool
 func IntToBool(i int) bool {
 	return i != 0
 }
 
-// FormatTime 将 Unix 时间戳, 转换为字符串
-func FormatTime(t int64) string {
-	return time.Unix(t, 0).Format("2006-01-02 03:04:05")
+// ShortDisplay 缩略显示字符串s, 显示长度为num, 缩略的内容用"..."填充
+func ShortDisplay(s string, num int) string {
+	for k := range s {
+		if k >= num {
+			return string(s[:k]) + "..."
+		}
+	}
+	return s
 }

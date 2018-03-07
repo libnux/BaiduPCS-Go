@@ -3,6 +3,7 @@ package requester
 import (
 	"bytes"
 	"fmt"
+	"github.com/iikira/BaiduPCS-Go/requester/multipartreader"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,12 +13,22 @@ import (
 
 // HTTPGet 简单实现 http 访问 GET 请求
 func HTTPGet(urlStr string) (body []byte, err error) {
-	resp, err := http.Get(urlStr)
+	resp, err := DefaultClient.Get(urlStr)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
+}
+
+// Req 参见 *HTTPClient.Req, 使用默认 http 客户端
+func Req(method string, urlStr string, post interface{}, header map[string]string) (resp *http.Response, err error) {
+	return DefaultClient.Req(method, urlStr, post, header)
+}
+
+// Fetch 参见 *HTTPClient.Fetch, 使用默认 http 客户端
+func Fetch(method string, urlStr string, post interface{}, header map[string]string) (body []byte, err error) {
+	return DefaultClient.Fetch(method, urlStr, post, header)
 }
 
 // Req 实现 http／https 访问，
@@ -53,8 +64,13 @@ func (h *HTTPClient) Req(method string, urlStr string, post interface{}, header 
 		return nil, err
 	}
 
+	// 设置
+	if v, ok := post.(*multipartreader.MultipartReader); ok {
+		v.SetupHTTPRequest(req)
+	}
+
 	// 设置浏览器标识
-	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("User-Agent", h.UserAgent)
 
 	if header != nil {
 		for key := range header {
@@ -71,11 +87,12 @@ func (h *HTTPClient) Req(method string, urlStr string, post interface{}, header 
 // 返回值分别为 网站主体, 错误信息
 func (h *HTTPClient) Fetch(method string, urlStr string, post interface{}, header map[string]string) (body []byte, err error) {
 	resp, err := h.Req(method, urlStr, post, header)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-	return
+	return ioutil.ReadAll(resp.Body)
 }

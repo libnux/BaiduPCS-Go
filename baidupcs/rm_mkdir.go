@@ -1,14 +1,14 @@
 package baidupcs
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/bitly/go-simplejson"
-	"github.com/iikira/BaiduPCS-Go/requester"
+	"github.com/json-iterator/go"
 )
 
 // Remove 批量删除文件/目录
-func (p PCSApi) Remove(paths ...string) (err error) {
+func (p *PCSApi) Remove(paths ...string) (err error) {
+	operation := "删除文件/目录"
+
 	pathsData := struct {
 		List []struct {
 			Path string `json:"path"`
@@ -23,58 +23,62 @@ func (p PCSApi) Remove(paths ...string) (err error) {
 		})
 	}
 
-	ej, err := json.Marshal(&pathsData)
+	ej, err := jsoniter.Marshal(&pathsData)
 	if err != nil {
 		return
 	}
 
-	p.addItem("file", "delete", map[string]string{
+	p.setAPI("file", "delete", map[string]string{
 		"param": string(ej[:]),
 	})
 
-	h := requester.NewHTTPClient()
-	body, err := h.Fetch("POST", p.url.String(), nil, map[string]string{
-		"Cookie": "BDUSS=" + p.bduss,
-	})
+	resp, err := p.client.Req("POST", p.url.String(), nil, nil)
 	if err != nil {
 		return
 	}
 
-	json, err := simplejson.NewJson(body)
+	defer resp.Body.Close()
+
+	errInfo := NewErrorInfo(operation)
+
+	d := jsoniter.NewDecoder(resp.Body)
+	err = d.Decode(errInfo)
 	if err != nil {
-		return
+		return fmt.Errorf("%s, json 数据解析失败, %s", operation, err)
 	}
 
-	code, err := CheckErr(json)
-	if err != nil {
-		return fmt.Errorf("删除文件/目录 遇到错误, 错误代码: %d, 消息: %s", code, err)
+	if errInfo.ErrCode != 0 {
+		return errInfo
 	}
 
 	return nil
 }
 
 // Mkdir 创建目录
-func (p PCSApi) Mkdir(path string) (err error) {
-	p.addItem("file", "mkdir", map[string]string{
+func (p *PCSApi) Mkdir(path string) (err error) {
+	operation := "创建目录"
+
+	p.setAPI("file", "mkdir", map[string]string{
 		"path": path,
 	})
 
-	h := requester.NewHTTPClient()
-	body, err := h.Fetch("POST", p.url.String(), nil, map[string]string{
-		"Cookie": "BDUSS=" + p.bduss,
-	})
+	resp, err := p.client.Req("POST", p.url.String(), nil, nil)
 	if err != nil {
-		return
+		return err
 	}
 
-	json, err := simplejson.NewJson(body)
+	defer resp.Body.Close()
+
+	errInfo := NewErrorInfo(operation)
+
+	d := jsoniter.NewDecoder(resp.Body)
+	err = d.Decode(errInfo)
 	if err != nil {
-		return
+		return fmt.Errorf("%s, json 数据解析失败, %s", operation, err)
 	}
 
-	code, err := CheckErr(json)
-	if err != nil {
-		return fmt.Errorf("创建目录 遇到错误, 错误代码: %d, 消息: %s", code, err)
+	if errInfo.ErrCode != 0 {
+		return errInfo
 	}
 	return
 }
