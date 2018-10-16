@@ -3,16 +3,16 @@ package tieba
 import (
 	"fmt"
 	"github.com/bitly/go-simplejson"
-	"github.com/iikira/BaiduPCS-Go/pcsutil"
 	"github.com/iikira/BaiduPCS-Go/requester"
 	"github.com/iikira/baidu-tools"
 	"github.com/iikira/baidu-tools/tieba/tiebautil"
 	"strconv"
+	"time"
 )
 
 // NewUserInfoByBDUSS 检测BDUSS有效性, 同时获取百度详细信息
 func NewUserInfoByBDUSS(bduss string) (*Tieba, error) {
-	timestamp := pcsutil.BeijingTimeOption("")
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 	post := map[string]string{
 		"bdusstoken":  bduss + "|null",
 		"channel_id":  "",
@@ -47,7 +47,7 @@ func NewUserInfoByBDUSS(bduss string) (*Tieba, error) {
 	errCode := json.Get("error_code").MustString()
 	errMsg := json.Get("error_msg").MustString()
 	if errCode != "0" {
-		return nil, fmt.Errorf("检测BDUSS有效性错误代码: %s, 消息: %s", pcsutil.ErrorColor(errCode), pcsutil.ErrorColor(errMsg))
+		return nil, fmt.Errorf("检测BDUSS有效性错误代码: %s, 消息: %s", errCode, errMsg)
 	}
 
 	userJSON := json.Get("user")
@@ -59,7 +59,7 @@ func NewUserInfoByBDUSS(bduss string) (*Tieba, error) {
 			UID:  uid,
 			Name: userJSON.Get("name").MustString(),
 			Auth: &baidu.Auth{
-				BDUSS: userJSON.Get("BDUSS").MustString(),
+				BDUSS: bduss,
 			},
 		},
 		Tbs: json.GetPath("anti", "tbs").MustString(),

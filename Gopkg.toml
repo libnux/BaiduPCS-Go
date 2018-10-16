@@ -35,31 +35,27 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/gobs/args"
+  name = "github.com/iikira/Baidu-Login"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/iikira/Baidu-Login"
+  name = "github.com/iikira/args"
 
 [[constraint]]
   branch = "master"
   name = "github.com/iikira/baidu-tools"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/iikira/downloader"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/iikira/osext"
-
-[[constraint]]
   name = "github.com/json-iterator/go"
-  version = "1.1.2"
+  version = "1.1.3"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/mars9/passwd"
+  name = "github.com/kardianos/osext"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/oleiade/lane"
 
 [[constraint]]
   branch = "master"

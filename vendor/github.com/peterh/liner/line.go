@@ -113,6 +113,10 @@ func (s *State) refreshSingleLine(prompt []rune, buf []rune, pos int) error {
 
 	pLen := countGlyphs(prompt)
 	bLen := countGlyphs(buf)
+	// on some OS / terminals extra column is needed to place the cursor char
+	if cursorColumn {
+		bLen++
+	}
 	pos = countGlyphs(buf[:pos])
 	if pLen+bLen < s.columns {
 		_, err = fmt.Print(string(buf))
@@ -163,6 +167,14 @@ func (s *State) refreshSingleLine(prompt []rune, buf []rune, pos int) error {
 func (s *State) refreshMultiLine(prompt []rune, buf []rune, pos int) error {
 	promptColumns := countMultiLineGlyphs(prompt, s.columns, 0)
 	totalColumns := countMultiLineGlyphs(buf, s.columns, promptColumns)
+	// on some OS / terminals extra column is needed to place the cursor char
+	// if cursorColumn {
+	//	totalColumns++
+	// }
+
+	// it looks like Multiline mode always assume that a cursor need an extra column,
+	// and always emit a newline if we are at the screen end, so no worarounds needed there
+
 	totalRows := (totalColumns + s.columns - 1) / s.columns
 	maxRows := s.maxRows
 	if totalRows > s.maxRows {
@@ -584,7 +596,7 @@ func (s *State) Prompt(prompt string) (string, error) {
 
 // PromptWithSuggestion displays prompt and an editable text with cursor at
 // given position. The cursor will be set to the end of the line if given position
-// is negative or greater than length of text. Returns a line of user input, not
+// is negative or greater than length of text (in runes). Returns a line of user input, not
 // including a trailing newline character. An io.EOF error is returned if the user
 // signals end-of-file by pressing Ctrl-D.
 func (s *State) PromptWithSuggestion(prompt string, text string, pos int) (string, error) {
@@ -619,8 +631,8 @@ func (s *State) PromptWithSuggestion(prompt string, text string, pos int) (strin
 
 	defer s.stopPrompt()
 
-	if pos < 0 || len(text) < pos {
-		pos = len(text)
+	if pos < 0 || len(line) < pos {
+		pos = len(line)
 	}
 	if len(line) > 0 {
 		err := s.refresh(p, line, pos)

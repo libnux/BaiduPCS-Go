@@ -3,6 +3,7 @@ package pcspath
 import (
 	"path"
 	"strings"
+	"unicode"
 )
 
 // EscapeBracketOne 转义中括号, 加一个反斜杠
@@ -66,4 +67,52 @@ func SplitAll(pcspath string) (elem []string) {
 	}
 
 	return
+}
+
+func isSpace(r rune) rune {
+	if unicode.IsSpace(r) {
+		return r
+	}
+	return -1
+}
+
+// Escape 转义字符串的空白符号, 小括号, 中括号
+func Escape(pcspath string) string {
+	// 没有空格
+	if !strings.ContainsAny(pcspath, "[]()") && strings.IndexFunc(pcspath, unicode.IsSpace) == -1 {
+		return pcspath
+	}
+
+	var (
+		builder = &strings.Builder{}
+		isSlash bool
+	)
+	for _, s := range pcspath {
+		switch s {
+		case '\\':
+			isSlash = !isSlash
+			if !isSlash {
+				builder.WriteRune('\\')
+			}
+			continue
+		case isSpace(s):
+			fallthrough
+		case '[', ']', '(', ')':
+			builder.WriteString("\\")
+			builder.WriteRune(s)
+			isSlash = false
+			continue
+		default:
+			isSlash = false
+			builder.WriteRune(s)
+		}
+	}
+	return builder.String()
+}
+
+// EscapeStrings 转义字符串数组所有元素的空格, 小括号, 中括号
+func EscapeStrings(ss []string) {
+	for k := range ss {
+		ss[k] = Escape(ss[k])
+	}
 }

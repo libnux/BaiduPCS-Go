@@ -1,21 +1,31 @@
+#!/bin/sh
+
 name="BaiduPCS-Go"
 version=$1
 
+GOROOT=/usr/local/go1.10.4
+go=$GOROOT/bin/go
+
 if [ "$1" = "" ];then
-    version=v3.3.Beta4
+    version=v3.5.6
 fi
 
 output="out/"
 
 Build() {
+    goarm=$4
+    if [ "$4" = "" ];then
+        goarm=7
+    fi
+
     echo "Building $1..."
-    export GOOS=$2 GOARCH=$3 GO386=sse2 CGO_ENABLED=0
+    export GOOS=$2 GOARCH=$3 GO386=sse2 CGO_ENABLED=0 GOARM=$4
     if [ $2 = "windows" ];then
-        goversioninfo -icon=assets/icon.ico -manifest="$name".exe.manifest -product-name="$name" -file-version="$version" -product-version="$version" -company=iikira -copyright="© 2016-2018 iikira." -o=resource_windows.syso
-        go build -ldflags "-s -w" -o "$output/$1/$name.exe"
+        goversioninfo -icon=assets/$name.ico -manifest="$name".exe.manifest -product-name="$name" -file-version="$version" -product-version="$version" -company=iikira -copyright="© 2016-2018 iikira." -o=resource_windows.syso
+        $go build -ldflags "-X main.Version=$version -s -w" -o "$output/$1/$name.exe"
         RicePack $1 $name.exe
     else
-        go build -ldflags "-s -w" -o "$output/$1/$name"
+        $go build -ldflags "-X main.Version=$version -s -w" -o "$output/$1/$name"
         RicePack $1 $name
     fi
 
@@ -25,8 +35,9 @@ Build() {
 ArmBuild() {
     echo "Building $1..."
     export GOOS=$2 GOARCH=$3 GOARM=$4 CGO_ENABLED=1
-    go build -ldflags '-s -w -linkmode=external -extldflags=-pie' -o "$output/$1/$name"
-    if [ $2 = "darwin" -a $3 = "arm64" ];then
+    $go build -ldflags "-X main.Version=$version -s -w -linkmode=external -extldflags=-pie" -o "$output/$1/$name"
+    if [ $2 = "darwin" ] && [ $3 = "arm" -o $3 = "arm64" ];then
+        # cp Info.plist "$output/$1"
         ldid -S "$output/$1/$name"
     fi
 
@@ -50,7 +61,7 @@ Pack() {
 
 # rice 打包静态资源
 RicePack() {
-    rice -i github.com/iikira/BaiduPCS-Go/pcsweb append --exec "$output/$1/$2"
+    rice -i github.com/iikira/BaiduPCS-Go/internal/pcsweb append --exec "$output/$1/$2"
 }
 
 # Android
@@ -77,12 +88,13 @@ Build $name-$version"-windows-x64" windows amd64
 # Linux
 Build $name-$version"-linux-386" linux 386
 Build $name-$version"-linux-amd64" linux amd64
-Build $name-$version"-linux-arm" linux arm
+Build $name-$version"-linux-armv5" linux arm 5
+Build $name-$version"-linux-armv7" linux arm 7
 Build $name-$version"-linux-arm64" linux arm64
-# Build $name-$version"-linux-mips" linux mips
-# Build $name-$version"-linux-mips64" linux mips64
-# Build $name-$version"-linux-mipsel" linux mipsle
-# Build $name-$version"-linux-mips64el" linux mips64le
+GOMIPS=softfloat Build $name-$version"-linux-mips" linux mips
+Build $name-$version"-linux-mips64" linux mips64
+GOMIPS=softfloat Build $name-$version"-linux-mipsle" linux mipsle
+Build $name-$version"-linux-mips64le" linux mips64le
 # Build $name-$version"-linux-ppc64" linux ppc64
 # Build $name-$version"-linux-ppc64le" linux ppc64le
 # Build $name-$version"-linux-s390x" linux s390x
@@ -90,7 +102,7 @@ Build $name-$version"-linux-arm64" linux arm64
 # Others
 # Build $name-$version"-solaris-amd64" solaris amd64
 Build $name-$version"-freebsd-386" freebsd 386
-# Build $name-$version"-freebsd-amd64" freebsd amd64
+Build $name-$version"-freebsd-amd64" freebsd amd64
 # Build $name-$version"-freebsd-arm" freebsd arm
 # Build $name-$version"-netbsd-386" netbsd	386
 # Build $name-$version"-netbsd-amd64" netbsd amd64
